@@ -110,6 +110,10 @@ void Rearrangement(int* somme_left, int* somme_right, int* tab, int* res, int n,
 }
 
 
+void QuickSort(int* tab,int nb_threads, int n ,int debut, int fin){
+
+}
+
 
 int main(int argc, char** argv) {
 
