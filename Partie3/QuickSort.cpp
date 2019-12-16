@@ -56,8 +56,29 @@ void Partitionnement(int * tab, int root, int n, int pivot, int * s, int * r){
 
 }
 
-void SommePrefixe(int s, int r, int pivot, int nprocs, int pid, int *somme_left, int* somme_right){
+void SommePrefixe(int s, int r, int pivot, int nprocs, int pid, int *somme_left, int* somme_right, int * taille_div){
+    MPI_Status status;
+    *somme_left = 0;
+    *somme_right = 0;
+    int * rec = new int[2];
 
+    if(pid==0) {
+        int envoi[2]= {s,r};
+        MPI_Send(envoi,2,MPI_INT,pid+1,30,MPI_COMM_WORLD);
+    }else if(pid<nprocs-1){
+        MPI_Recv(rec,2,MPI_INT,pid-1,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
+        *somme_left+=rec[0];
+        *somme_right+=rec[1];
+        int envoi[2]= {*somme_left+s,*somme_right+r};
+        MPI_Send(envoi,2,MPI_INT,pid+1,30,MPI_COMM_WORLD);
+    }else{
+        MPI_Recv(rec,2,MPI_INT,pid-1,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
+        *somme_left+=rec[0];
+        *somme_right+=rec[1];
+        taille_div[0]=*somme_left+s;
+        taille_div[1]=*somme_right+r;
+    }
+    MPI_Bcast(taille_div,2,MPI_INT,nprocs-1,MPI_COMM_WORLD);
 }
 
 
@@ -94,13 +115,22 @@ int main(int argc, char** argv){
     int s=-1;
     int r=-1;
     Partitionnement(tab_global,0,n,pivot,&s,&r);
+
+    int somme_left,somme_right;
+    int * taille_div = new int[2];
+    SommePrefixe(s,r,pivot,nprocs,pid,&somme_left,&somme_right,taille_div);
     for(int i = 0; i<nprocs; i++) {
 
         if (pid == i) {
-            cout<<"je suis "<<pid<<" : ";
-            cout << s<< " "<<r<< endl;
+            cout<<"je suis "<<pid<<" : "<< s<< " "<<r<< endl;
+            cout<<"je suis "<<pid<<" mes sommes : "<<somme_left<<" , "<<somme_right<<endl;
         }
     }
+    if(pid==0){
+        cout<<"les tailles sont : "<<taille_div[0]<<" , "<<taille_div[1]<<endl;
+    }
+
+
 
 
 
